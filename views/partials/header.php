@@ -11,8 +11,12 @@
 <?php if (Auth::check()): ?>
     <?php require __DIR__ . '/banner_recordatorio.php'; ?>
     <header class="app-header">
-        <div class="app-header__marca">Agenda de Cobranza</div>
+        <a class="app-header__marca" href="index.php?p=lista_tickets">Agenda de Cobranza</a>
         <nav class="app-header__nav">
+            <a class="btn btn--ghost btn--sm" href="index.php?p=dashboard">Dashboard</a>
+            <?php if (Auth::esAdmin()): ?>
+                <a class="btn btn--ghost btn--sm" href="index.php?p=administrar_usuarios">Usuarios</a>
+            <?php endif; ?>
             <span class="app-header__usuario"><?= e(current_user()['nombre']) ?> · <?= e(current_user()['rol']) ?></span>
             <a class="btn btn--ghost btn--sm" href="index.php?p=logout">Salir</a>
         </nav>

@@ -1,0 +1,42 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Plantilla para producción (cPanel/VPS). La base ya se llama
+ * c2881399_agenda en local y en producción (mismo nombre), así que el
+ * deploy no toca ninguna query - solo cambian usuario y password.
+ *
+ * Cómo usar:
+ *   1. Copiar este archivo como config/database.php en el servidor
+ *      (nunca commitear ese archivo con las credenciales reales).
+ *   2. Completar DB_USER/DB_PASS con los que te dio cPanel al crear el
+ *      usuario MySQL para c2881399_agenda (Asistente de bases de datos).
+ *   3. Si el motor del hosting no corre en 'localhost' (poco común, pero
+ *      pasa en algunos VPS con la base en un host separado), ajustar
+ *      DB_HOST también.
+ */
+
+const DB_HOST    = 'localhost';       // AJUSTAR si el hosting lo requiere
+const DB_NAME    = 'c2881399_agenda'; // mismo nombre que en local, no tocar
+const DB_USER    = 'CAMBIAR_usuario_mysql_cpanel';
+const DB_PASS    = 'CAMBIAR_password_mysql_cpanel';
+const DB_CHARSET = 'utf8mb4';
+
+final class Database
+{
+    private static ?PDO $pdo = null;
+
+    public static function pdo(): PDO
+    {
+        if (self::$pdo === null) {
+            $dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s', DB_HOST, DB_NAME, DB_CHARSET);
+            self::$pdo = new PDO($dsn, DB_USER, DB_PASS, [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]);
+        }
+
+        return self::$pdo;
+    }
+}

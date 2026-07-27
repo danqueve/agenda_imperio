@@ -1,0 +1,25 @@
+# Agenda de Cobranza - Imperio Comercial
+#
+# Esto es defensa en profundidad para el entorno de desarrollo, donde
+# WAMP sirve toda la carpeta agenda/ (no solo public/). En produccion el
+# Document Root apunta directamente a agenda/public (ver DEPLOY.md): las
+# carpetas config/sql/src/views/files ni siquiera son alcanzables por URL
+# ahi, asi que esas reglas (una .htaccess por carpeta) pasan a ser
+# redundantes pero inofensivas una vez desplegado.
+#
+# Nota tecnica: <Directory>/<DirectoryMatch> no estan permitidos dentro
+# de un .htaccess (solo en la config principal de Apache) - por eso la
+# proteccion de cada carpeta vive en un .htaccess propio adentro de cada
+# una, no aca en uno solo con reglas de directorio.
+
+<IfModule mod_authz_core.c>
+    <Files "cron_apertura_tickets.php">
+        Require all denied
+    </Files>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <Files "cron_apertura_tickets.php">
+        Order deny,allow
+        Deny from all
+    </Files>
+</IfModule>

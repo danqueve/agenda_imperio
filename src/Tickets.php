@@ -3,20 +3,25 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/SasApiClient.php';
+require_once __DIR__ . '/Prioridad.php';
+require_once __DIR__ . '/Refinanciaciones.php';
 
 final class Tickets
 {
+    private const CACHE_SESSION_KEY = 'sas_sync_cache';
+    private const CACHE_TTL_SEGUNDOS = 600;
+
     /**
      * Llama a SAS (accion=atrasados) y por cada cliente con más de 7 días
      * de atraso: crea el contacto si no existe, y abre un ticket si
      * todavía no tiene uno abierto.
      *
-     * No cachea nada acá — quien la llame desde una request web (Fase 2,
-     * lista_tickets.php) decide si conviene envolver esta llamada con una
-     * caché de sesión de ~10 min para no golpear a SAS en cada refresh.
-     * El cron (cron_apertura_tickets.php) la llama directo.
+     * No cachea nada acá — sincronizarConCache() es quien envuelve esta
+     * llamada con la caché de sesión de ~10 min para no golpear a SAS en
+     * cada refresh de lista_tickets.php. El cron (cron_apertura_tickets.php)
+     * llama a este método directo, sin caché (no hay sesión en CLI).
      *
-     * @return array{ok: bool, procesados?: int, error?: string}
+     * @return array{ok: bool, procesados?: int, datos?: array, error?: string}
      */
     public static function sincronizarDesdeSAS(): array
     {
@@ -34,7 +39,202 @@ final class Tickets
             $procesados++;
         }
 
-        return ['ok' => true, 'procesados' => $procesados];
+        return ['ok' => true, 'procesados' => $procesados, 'datos' => $resp['data']];
+    }
+
+    /**
+     * Envoltorio de sincronizarDesdeSAS() con caché de sesión de 10 min,
+     * pensado para lista_tickets.php (no golpear a SAS en cada refresh de
+     * pantalla). Si SAS falló, no se cachea el fallo: el próximo request
+     * reintenta enseguida en vez de quedar 10 min mostrando "SAS caído".
+     */
+    public static function sincronizarConCache(): array
+    {
+        $cache = $_SESSION[self::CACHE_SESSION_KEY] ?? null;
+        if ($cache !== null && (time() - $cache['ts']) < self::CACHE_TTL_SEGUNDOS) {
+            return $cache['resultado'];
+        }
+
+        $resultado = self::sincronizarDesdeSAS();
+        if ($resultado['ok']) {
+            $_SESSION[self::CACHE_SESSION_KEY] = ['ts' => time(), 'resultado' => $resultado];
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Arma la lista de tickets abiertos lista para lista_tickets.php:
+     * combina los datos propios (contacto, última gestión, flags de
+     * agenda) con los datos en vivo de SAS (días de atraso, deuda) cuando
+     * están disponibles, calcula el semáforo y ordena por prioridad.
+     *
+     * @return array{sync: array, tickets: array}
+     */
+    public static function listaParaVista(): array
+    {
+        $sync     = self::sincronizarConCache();
+        $sasPorDni = [];
+        if ($sync['ok'] && !empty($sync['datos'])) {
+            foreach ($sync['datos'] as $fila) {
+                $sasPorDni[$fila['dni']] = $fila;
+            }
+        }
+
+        $pdo = Database::pdo();
+        $hoy = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+
+        $stmt = $pdo->prepare('
+            SELECT
+                t.id AS ticket_id, t.dias_atraso_apertura,
+                c.dni, c.nombre_completo, c.telefono_principal, c.cobrador_nombre, c.zona,
+                (SELECT MAX(g.fecha_hora) FROM gestiones g WHERE g.ticket_id = t.id) AS ultima_gestion,
+                (SELECT COUNT(*) FROM gestiones g WHERE g.ticket_id = t.id) AS cantidad_gestiones,
+                EXISTS(SELECT 1 FROM agendas_cobro a WHERE a.ticket_id = t.id AND a.estado = "pendiente" AND a.fecha_agendada = ?) AS tiene_agenda_hoy,
+                EXISTS(SELECT 1 FROM agendas_cobro a WHERE a.ticket_id = t.id AND a.estado = "incumplida") AS tiene_agenda_incumplida,
+                EXISTS(SELECT 1 FROM agendas_cobro a WHERE a.ticket_id = t.id AND a.estado = "pendiente" AND a.fecha_agendada > ?) AS tiene_agenda_futura
+            FROM tickets t
+            JOIN contactos_agenda c ON c.id = t.contacto_id
+            WHERE t.estado = "abierto"
+        ');
+        $stmt->execute([$hoy, $hoy]);
+        $filas = $stmt->fetchAll();
+
+        $resultado = [];
+        foreach ($filas as $fila) {
+            $sas        = $sasPorDni[$fila['dni']] ?? null;
+            $diasAtraso = $sas['dias_atraso'] ?? $fila['dias_atraso_apertura'];
+            $deudaTotal = $sas['deuda_total'] ?? null;
+
+            $prioridad = Prioridad::calcular(
+                (int) $diasAtraso,
+                $fila['ultima_gestion'],
+                (bool) $fila['tiene_agenda_incumplida'],
+                (bool) $fila['tiene_agenda_futura']
+            );
+
+            $resultado[] = [
+                'ticket_id'        => (int) $fila['ticket_id'],
+                'dni'              => $fila['dni'],
+                'nombre_completo'  => $fila['nombre_completo'],
+                'telefono'         => $fila['telefono_principal'],
+                'cobrador_nombre'  => $fila['cobrador_nombre'],
+                'dias_atraso'      => (int) $diasAtraso,
+                'deuda_total'      => $deudaTotal !== null ? (float) $deudaTotal : null,
+                'ultima_gestion'   => $fila['ultima_gestion'],
+                'sin_gestionar'    => ((int) $fila['cantidad_gestiones']) === 0,
+                'tiene_agenda_hoy' => (bool) $fila['tiene_agenda_hoy'],
+                'prioridad'        => $prioridad,
+            ];
+        }
+
+        $ordenPrioridad = ['rojo' => 0, 'naranja' => 1, 'amarillo' => 2, 'verde' => 3];
+        usort($resultado, static function (array $a, array $b) use ($ordenPrioridad): int {
+            return $ordenPrioridad[$a['prioridad']] <=> $ordenPrioridad[$b['prioridad']]
+                ?: $b['dias_atraso'] <=> $a['dias_atraso'];
+        });
+
+        return ['sync' => $sync, 'tickets' => $resultado];
+    }
+
+    /**
+     * Estadísticas para la solapa "Resumen" del dashboard. Reutiliza
+     * listaParaVista() (misma sincronización cacheada) para el conteo de
+     * abiertos y el top 10 de rojos sin gestionar, y agrega 2 consultas
+     * chicas propias para lo que esa vista no calcula.
+     */
+    public static function estadisticasResumen(): array
+    {
+        $pdo          = Database::pdo();
+        $hoy          = new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires'));
+        $hoyStr       = $hoy->format('Y-m-d');
+        $inicioSemana = $hoy->modify('monday this week')->format('Y-m-d 00:00:00');
+
+        $abiertos = (int) $pdo->query("SELECT COUNT(*) FROM tickets WHERE estado = 'abierto'")->fetchColumn();
+
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM tickets WHERE DATE(fecha_apertura) = ?');
+        $stmt->execute([$hoyStr]);
+        $abiertosHoy = (int) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("
+            SELECT motivo_cierre, COUNT(*) AS cantidad
+            FROM tickets
+            WHERE estado = 'cerrado' AND fecha_cierre >= ?
+            GROUP BY motivo_cierre
+        ");
+        $stmt->execute([$inicioSemana]);
+        $cerradosPorMotivo = ['abono' => 0, 'retiro_producto' => 0, 'refinanciacion' => 0];
+        foreach ($stmt->fetchAll() as $fila) {
+            $cerradosPorMotivo[$fila['motivo_cierre']] = (int) $fila['cantidad'];
+        }
+
+        $lista             = self::listaParaVista();
+        $rojosSinGestionar = array_values(array_filter($lista['tickets'], static function (array $t): bool {
+            return $t['prioridad'] === 'rojo' && $t['sin_gestionar'];
+        }));
+        usort($rojosSinGestionar, static fn (array $a, array $b): int => $b['dias_atraso'] <=> $a['dias_atraso']);
+
+        return [
+            'sync'            => $lista['sync'],
+            'abiertos'        => $abiertos,
+            'abiertos_hoy'    => $abiertosHoy,
+            'cerrados_semana' => $cerradosPorMotivo,
+            'top10_rojos'     => array_slice($rojosSinGestionar, 0, 10),
+        ];
+    }
+
+    /** Ticket + datos del contacto, para la ficha del ticket. */
+    public static function porId(int $id): ?array
+    {
+        $stmt = Database::pdo()->prepare('
+            SELECT
+                t.id AS ticket_id, t.estado, t.fecha_apertura, t.dias_atraso_apertura,
+                t.motivo_cierre, t.fecha_cierre, t.observacion_cierre, t.monto_cierre,
+                c.id AS contacto_id, c.dni, c.nombre_completo, c.telefono_principal,
+                c.telefono_alt, c.direccion_referencia, c.cobrador_nombre, c.zona
+            FROM tickets t
+            JOIN contactos_agenda c ON c.id = t.contacto_id
+            WHERE t.id = ?
+        ');
+        $stmt->execute([$id]);
+        $fila = $stmt->fetch();
+
+        return $fila ?: null;
+    }
+
+    /**
+     * Cierra un ticket abierto con uno de los 3 motivos. Para
+     * 'refinanciacion' exige que ya exista una refinanciación en estado
+     * 'aceptada' o 'procesada_en_sas' (ver plan §2 - ambos roles pueden
+     * cerrar así desde la ficha, siempre que ya exista la refinanciación
+     * aceptada).
+     *
+     * @return array{ok: bool, error?: string}
+     */
+    public static function cerrar(int $ticketId, string $motivo, ?string $observacion, ?float $monto, int $usuarioId): array
+    {
+        $pdo = Database::pdo();
+
+        if ($motivo === 'refinanciacion' && !Refinanciaciones::aceptadaParaTicket($pdo, $ticketId)) {
+            return [
+                'ok'    => false,
+                'error' => 'No hay una refinanciación aceptada para este ticket. Creala (o aceptala) primero.',
+            ];
+        }
+
+        $stmt = $pdo->prepare("
+            UPDATE tickets
+            SET estado = 'cerrado', motivo_cierre = ?, fecha_cierre = NOW(), cerrado_por = ?,
+                observacion_cierre = ?, monto_cierre = ?
+            WHERE id = ? AND estado = 'abierto'
+        ");
+        $stmt->execute([$motivo, $usuarioId, $observacion, $monto, $ticketId]);
+
+        if ($stmt->rowCount() === 0) {
+            return ['ok' => false, 'error' => 'El ticket ya estaba cerrado o no existe.'];
+        }
+
+        return ['ok' => true];
     }
 
     /** Crea el contacto si el DNI todavía no existe; si ya existe, refresca los datos informativos. */

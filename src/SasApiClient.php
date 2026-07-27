@@ -17,6 +17,24 @@ final class SasApiClient
         return self::llamar('atrasados');
     }
 
+    /** Datos del cliente y créditos en curso/con mora. */
+    public static function cliente(string $dni): array
+    {
+        return self::llamar('cliente', ['dni' => $dni]);
+    }
+
+    /** Deuda total, cuotas vencidas, días de atraso y próximo vencimiento. */
+    public static function deuda(string $dni): array
+    {
+        return self::llamar('deuda', ['dni' => $dni]);
+    }
+
+    /** Últimos 10 pagos confirmados del cliente. */
+    public static function pagos(string $dni): array
+    {
+        return self::llamar('pagos', ['dni' => $dni]);
+    }
+
     /** @return array{ok: bool, data?: mixed, error?: string} */
     private static function llamar(string $accion, array $params = []): array
     {
@@ -33,7 +51,6 @@ final class SasApiClient
 
         $respuestaCruda = curl_exec($ch);
         $errorCurl       = curl_error($ch);
-        curl_close($ch);
 
         if ($respuestaCruda === false || $errorCurl !== '') {
             return ['ok' => false, 'error' => 'SAS no respondió: ' . $errorCurl];

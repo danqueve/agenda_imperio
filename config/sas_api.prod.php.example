@@ -1,0 +1,25 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Plantilla para producción del cliente hacia la API de solo lectura de
+ * SAS Imperio.
+ *
+ * Cómo usar:
+ *   1. Copiar este archivo como config/sas_api.php en el servidor de la
+ *      Agenda (nunca commitear ese archivo con el token real).
+ *   2. SAS_API_URL: la URL real de sas_side/api_readonly.php una vez
+ *      desplegado en el hosting de SAS (probablemente la misma cuenta
+ *      cPanel que aloja c2881399_credit, a juzgar por el prefijo
+ *      compartido - coordinar con quien administra ese hosting).
+ *   3. SAS_API_TOKEN: generar un token propio (por ejemplo con
+ *      `php -r "echo bin2hex(random_bytes(32));"`) y copiar el MISMO
+ *      valor en sas_side/config_readonly.php del lado de SAS.
+ *   4. HTTPS obligatorio en producción para esta URL: el token viaja en
+ *      un header Authorization, y en HTTP plano cualquiera en la red
+ *      podría verlo.
+ */
+
+const SAS_API_URL     = 'https://CAMBIAR-dominio-de-sas.com.ar/ruta/api_readonly.php'; // AJUSTAR
+const SAS_API_TOKEN   = 'CAMBIAR_generar_token_propio_de_produccion';                  // AJUSTAR
+const SAS_API_TIMEOUT = 8; // segundos, ver src/SasApiClient.php

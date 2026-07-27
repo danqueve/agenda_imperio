@@ -48,6 +48,8 @@
   /* Capas */
   --z-banner: 40;
   --z-actionbar: 30;
+  --z-modal-backdrop: 50;
+  --z-modal: 51;
 
   --touch-min: 48px;
 }
@@ -84,7 +86,7 @@ a { color: var(--color-accent); }
   border-bottom: 1px solid var(--color-border);
 }
 
-.app-header__marca { font-weight: 700; color: var(--color-accent); }
+.app-header__marca { font-weight: 700; color: var(--color-accent); text-decoration: none; }
 .app-header__nav { display: flex; align-items: center; gap: var(--space-3); }
 .app-header__usuario { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 
@@ -235,7 +237,264 @@ a { color: var(--color-accent); }
 
 .banner-recordatorio__lista li { padding: var(--space-1) 0; }
 
+/* ---- Badge de semáforo (siempre junto a texto, nunca solo color) ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge--rojo     { background: var(--color-rojo-bg);     color: var(--color-rojo-text);     border-color: var(--color-rojo-border); }
+.badge--naranja  { background: var(--color-naranja-bg);  color: var(--color-naranja-text);  border-color: var(--color-naranja-border); }
+.badge--amarillo { background: var(--color-amarillo-bg); color: var(--color-amarillo-text); border-color: var(--color-amarillo-border); }
+.badge--verde    { background: var(--color-verde-bg);    color: var(--color-verde-text);    border-color: var(--color-verde-border); }
+
+/* ---- Tarjeta de ticket (lista de tickets) ---- */
+.card-ticket { margin-bottom: var(--space-4); }
+
+.card-ticket__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.card-ticket__header strong { font-size: var(--font-size-md); }
+
+.card-ticket__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.card-ticket__acciones { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.card-ticket__acciones .btn { flex: 1; min-width: 100px; }
+
+/* ---- Chips seleccionables (filtros de la lista, chips Sí/No y motivo) ---- */
+.filter-chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.filter-chip.is-activo { background: var(--color-accent); color: var(--color-accent-text); border-color: var(--color-accent); }
+
+/* ---- Barra de acción fija (ficha del ticket) ---- */
+.app-main--con-actionbar { padding-bottom: calc(var(--touch-min) + var(--space-6)); }
+
+.actionbar-fija {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-actionbar);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -2px 8px rgba(16, 24, 32, .08);
+}
+
+.actionbar-fija .btn { flex: 1; padding: 0 var(--space-2); font-size: var(--font-size-sm); }
+
+/* ---- Modal (cerrar ticket, WhatsApp) ---- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 32, .5);
+  z-index: var(--z-modal-backdrop);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-5);
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+  z-index: var(--z-modal);
+}
+
+.modal-panel__titulo { margin-bottom: var(--space-4); }
+.modal-panel__acciones { display: flex; gap: var(--space-2); margin-top: var(--space-5); }
+.modal-panel__acciones .btn { flex: 1; }
+
+.modal-panel__opcion {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.modal-panel__opcion:hover { background: var(--color-bg); }
+.modal-panel__opcion strong { display: block; margin-bottom: var(--space-1); }
+.modal-panel__opcion span { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+
+/* ---- Tabs (ficha del ticket, dashboard) ---- */
+.tabs__list {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-4);
+  overflow-x: auto;
+}
+
+.tabs__tab {
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-4);
+  min-height: var(--touch-min);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.tabs__tab.is-activo { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+
+/* ---- Timeline de gestiones ---- */
+.timeline { list-style: none; margin: 0; padding: 0; }
+
+.timeline__item { padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
+.timeline__item:last-child { border-bottom: none; }
+
+.timeline__cabecera {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.timeline__obs { margin: 0; }
+
+/* ---- Toggle (switch) para "se agendó cobro" / "quiere refinanciar" ---- */
+.form-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  cursor: pointer;
+}
+
+.form-toggle__input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.form-toggle__switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  flex-shrink: 0;
+  transition: background-color .15s ease;
+}
+
+.form-toggle__switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-toggle__input:checked + .form-toggle__switch { background: var(--color-accent); }
+.form-toggle__input:checked + .form-toggle__switch::after { transform: translateX(18px); }
+
+/* ---- KPI tiles (solapa Resumen del dashboard) ---- */
+.stat-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.stat-tile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.stat-tile__valor { display: block; font-size: var(--font-size-xl); font-weight: 700; color: var(--color-accent); }
+.stat-tile__label { display: block; font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-top: var(--space-1); }
+
+/* ---- Fila de agenda (solapa Agendas del dashboard) ---- */
+.list-agenda-item--vencida { border-color: var(--color-rojo-border); }
+
+/* ---- Kanban de refinanciaciones ----
+   Mobile: acordeón (una sola columna visible a la vez, vía Alpine).
+   Desde tablet: las 4 columnas lado a lado. */
+.kanban { display: block; }
+
+.kanban__column { display: none; }
+.kanban__column.is-activa { display: block; }
+
+.kanban__column-titulo { margin-bottom: var(--space-3); }
+
+.kanban__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.kanban__card form { margin-top: var(--space-2); display: inline-block; margin-right: var(--space-2); }
+
 /* ---- Escala hacia tablet/desktop (mobile-first: base = móvil) ---- */
 @media (min-width: 768px) {
   .app-main { padding: var(--space-6); }
+  .modal-backdrop { align-items: center; }
+  .modal-panel { border-radius: var(--radius-lg); }
+  .stat-tile-grid { grid-template-columns: repeat(4, 1fr); }
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+  .kanban__column { display: block; }
 }

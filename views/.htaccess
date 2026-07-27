@@ -1,0 +1,9 @@
+# Nunca alcanzable por URL una vez que el Document Root apunte a
+# agenda/public (ver DEPLOY.md). Mientras tanto, en WAMP, bloqueado.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
