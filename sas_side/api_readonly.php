@@ -13,7 +13,8 @@ declare(strict_types=1);
  * ACTIVO/INACTIVO), ic_creditos (estado EN_CURSO/FINALIZADO/MOROSO/
  * CANCELADO, cobrador_id -> ic_usuarios), ic_cuotas (estado PENDIENTE/
  * VENCIDA/PARCIAL/PAGADA/CAP_PAGADA/CANCELADA - la columna dias_atraso
- * existe pero no se mantiene actualizada, se calcula acá con DATEDIFF),
+ * existe pero no se mantiene actualizada, se recalcula acá con
+ * sas_dias_atraso_habiles(), igual que hace SAS en toda su app),
  * ic_usuarios (rol='cobrador' hace de "cobrador"; no hay tabla
  * ic_cobradores separada), ic_pagos_confirmados (revertido=0 para
  * pagos vigentes).
