@@ -625,11 +625,13 @@ a.card:hover { box-shadow: var(--shadow-md); }
   .app-main--ancho { max-width: 1280px; }
   .tickets-grid { grid-template-columns: repeat(3, 1fr); }
 
-  /* Fila de filtros de historial_tickets.php: en mobile los campos
-     siguen apilados (sin cambios); desde acá pasan a una sola fila. */
+  /* Fila de filtros (historial_tickets.php y filtro_busqueda.php,
+     compartido por lista_tickets/Resumen/Agendas): en mobile los campos
+     siguen apilados (sin cambios); desde acá pasan a filas de 3 columnas
+     (se auto-envuelve en 2 filas cuando son 6 campos, como en historial). */
   .form-fila {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-3);
   }
   .form-fila .form-field { margin-bottom: 0; }

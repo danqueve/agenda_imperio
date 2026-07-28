@@ -3,8 +3,9 @@ declare(strict_types=1);
 
 $vistaLista = Tickets::listaParaVista();
 $tickets    = $vistaLista['tickets'];
+$cobradores = Tickets::cobradoresDistintos();
 ?>
-<div x-data="{ filtro: 'todos' }">
+<div x-data="{ filtro: 'todos', busqueda: '', zonaFiltro: '', cobradorFiltro: '' }">
     <h1>Tickets en gestión</h1>
 
     <?php if (!empty($_GET['msg']) && $_GET['msg'] === 'ticket_cerrado'): ?>
@@ -20,6 +21,8 @@ $tickets    = $vistaLista['tickets'];
         </p>
     <?php endif; ?>
 
+    <?php $prefijoFiltro = 'lista'; require __DIR__ . '/partials/filtro_busqueda.php'; ?>
+
     <div class="filter-chips">
         <button type="button" class="filter-chip" :class="{ 'is-activo': filtro === 'todos' }" @click="filtro = 'todos'">Todos</button>
         <button type="button" class="filter-chip" :class="{ 'is-activo': filtro === 'rojo' }" @click="filtro = 'rojo'">Rojo</button>
@@ -33,16 +36,22 @@ $tickets    = $vistaLista['tickets'];
 
     <div class="tickets-grid">
         <?php foreach ($tickets as $t): ?>
-            <?php
-            $esRojo         = $t['prioridad'] === 'rojo' ? 'true' : 'false';
-            $conAgendaHoy   = $t['tiene_agenda_hoy'] ? 'true' : 'false';
-            $sinGestionar   = $t['sin_gestionar'] ? 'true' : 'false';
-            ?>
             <div class="card card-ticket"
-                 x-show="filtro === 'todos'
-                    || (filtro === 'rojo' && <?= $esRojo ?>)
-                    || (filtro === 'agenda_hoy' && <?= $conAgendaHoy ?>)
-                    || (filtro === 'sin_gestionar' && <?= $sinGestionar ?>)">
+                 x-data='<?= json_attr(['t' => [
+                     'nombre'         => $t['nombre_completo'],
+                     'dni'            => $t['dni'],
+                     'zona'           => $t['zona'],
+                     'cobrador'       => $t['cobrador_nombre'] ?? '',
+                     'prioridad'      => $t['prioridad'],
+                     'tieneAgendaHoy' => $t['tiene_agenda_hoy'],
+                     'sinGestionar'   => $t['sin_gestionar'],
+                 ]]) ?>'
+                 x-show="
+                    (filtro === 'todos' || (filtro === 'rojo' && t.prioridad === 'rojo') || (filtro === 'agenda_hoy' && t.tieneAgendaHoy) || (filtro === 'sin_gestionar' && t.sinGestionar))
+                    && (busqueda === '' || t.nombre.toLowerCase().includes(busqueda.toLowerCase()) || t.dni.includes(busqueda))
+                    && (zonaFiltro === '' || t.zona === zonaFiltro)
+                    && (cobradorFiltro === '' || t.cobrador === cobradorFiltro)
+                 ">
                 <div class="card-ticket__header">
                     <strong><?= e($t['nombre_completo']) ?></strong>
                     <span class="badge badge--<?= e($t['prioridad']) ?>"><?= icon('severidad') ?><?= (int) $t['dias_atraso'] ?> días</span>
@@ -50,6 +59,7 @@ $tickets    = $vistaLista['tickets'];
                 <div class="card-ticket__meta">
                     <span>Deuda: <?= $t['deuda_total'] !== null ? '$' . e(number_format($t['deuda_total'], 0, ',', '.')) : 'no disponible ahora' ?></span>
                     <span>Cartera de: <?= e($t['cobrador_nombre'] ?? '—') ?></span>
+                    <span>Zona: <?= e(ucfirst($t['zona'])) ?></span>
                     <span>Última gestión: <?= $t['ultima_gestion'] ? e((new DateTimeImmutable($t['ultima_gestion']))->format('d/m/Y H:i')) : 'Nunca' ?></span>
                     <?php if ($t['tiene_agenda_hoy']): ?>
                         <span class="con-icono"><?= icon('calendario', 'icon--sm') ?> Tiene agenda de cobro para hoy</span>

@@ -177,8 +177,9 @@ final class Agendas
     private static function sqlBase(): string
     {
         // a.* ya trae ticket_id (FK de agendas_cobro) - no hace falta repetirlo desde t.
+        // zona/cobrador_nombre/dni: para el buscador y los filtros de la solapa Agendas del dashboard.
         return '
-            SELECT a.*, c.nombre_completo, c.telefono_principal
+            SELECT a.*, c.nombre_completo, c.telefono_principal, c.zona, c.cobrador_nombre, c.dni
             FROM agendas_cobro a
             JOIN tickets t ON t.id = a.ticket_id
             JOIN contactos_agenda c ON c.id = t.contacto_id

@@ -29,3 +29,19 @@ function agenda_tipo_label(string $tipo): string
         default          => $tipo,
     };
 }
+
+/**
+ * JSON-encodea un valor para insertarlo como valor completo de un
+ * atributo x-data/x-show de Alpine. Los flags JSON_HEX_* escapan
+ * comillas simples/dobles, < > y & como \u00XX: el resultado es
+ * simultáneamente JS válido (Alpine lo evalúa como expresión) y seguro
+ * dentro de un atributo HTML entre comillas dobles, sin pasar también
+ * por e()/htmlspecialchars (envolverlo en e() rompería el JSON).
+ */
+function json_attr(mixed $valor): string
+{
+    return json_encode(
+        $valor,
+        JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
+    );
+}

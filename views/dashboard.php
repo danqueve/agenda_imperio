@@ -8,6 +8,7 @@ $agendasHoyDashboard        = Agendas::deHoy();
 $agendasSemanaDashboard     = Agendas::estaSemana();
 $agendasVencidasDashboard   = Agendas::vencidas();
 $refinanciacionesPorEstado  = Refinanciaciones::porEstado();
+$cobradores                 = Tickets::cobradoresDistintos();
 
 $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciaciones', 'historial'], true)
     ? $_GET['tab']
@@ -24,7 +25,7 @@ $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciacio
     </div>
 
     <!-- ---- Resumen ---- -->
-    <div x-show="tabActiva === 'resumen'">
+    <div x-show="tabActiva === 'resumen'" x-data="{ busqueda: '', zonaFiltro: '', cobradorFiltro: '' }">
         <?php if (!$resumen['sync']['ok']): ?>
             <p class="alerta alerta--error">No se pudo sincronizar con SAS en este momento. Los conteos usan los datos ya guardados.</p>
         <?php endif; ?>
@@ -48,13 +49,31 @@ $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciacio
             <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['cerrados_semana']['refinanciacion'] ?></span><span class="stat-tile__label"><?= icon('refinanciar', 'icon--sm') ?> Refinanció</span></div>
         </div>
 
-        <h3>Top 10 rojos sin gestionar</h3>
-        <?php if (empty($resumen['top10_rojos'])): ?>
+        <h3>Rojos sin gestionar</h3>
+        <?php $prefijoFiltro = 'resumen'; require __DIR__ . '/partials/filtro_busqueda.php'; ?>
+        <?php if (empty($resumen['rojos_sin_gestionar'])): ?>
             <p class="texto-secundario">No hay tickets rojos sin gestionar.</p>
         <?php else: ?>
+            <p class="texto-secundario"
+               x-show="busqueda === '' && zonaFiltro === '' && cobradorFiltro === '' && <?= (int) count($resumen['rojos_sin_gestionar']) ?> > 10">
+                Mostrando los 10 más urgentes de <?= (int) count($resumen['rojos_sin_gestionar']) ?> — buscá o filtrá para ver el resto.
+            </p>
             <div class="tickets-grid">
-                <?php foreach ($resumen['top10_rojos'] as $t): ?>
-                    <a class="card" href="index.php?p=ficha_ticket&id=<?= $t['ticket_id'] ?>">
+                <?php foreach ($resumen['rojos_sin_gestionar'] as $idx => $t): ?>
+                    <a class="card"
+                       href="index.php?p=ficha_ticket&id=<?= $t['ticket_id'] ?>"
+                       x-data='<?= json_attr(['idx' => $idx, 't' => [
+                           'nombre'   => $t['nombre_completo'],
+                           'dni'      => $t['dni'],
+                           'zona'     => $t['zona'],
+                           'cobrador' => $t['cobrador_nombre'] ?? '',
+                       ]]) ?>'
+                       x-show="
+                          (busqueda !== '' || zonaFiltro !== '' || cobradorFiltro !== '' || idx < 10)
+                          && (busqueda === '' || t.nombre.toLowerCase().includes(busqueda.toLowerCase()) || t.dni.includes(busqueda))
+                          && (zonaFiltro === '' || t.zona === zonaFiltro)
+                          && (cobradorFiltro === '' || t.cobrador === cobradorFiltro)
+                       ">
                         <div class="card-ticket__header">
                             <strong><?= e($t['nombre_completo']) ?></strong>
                             <span class="badge badge--rojo"><?= icon('severidad') ?><?= (int) $t['dias_atraso'] ?> días</span>
@@ -66,7 +85,9 @@ $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciacio
     </div>
 
     <!-- ---- Agendas ---- -->
-    <div x-show="tabActiva === 'agendas'" x-data="{ subFiltro: 'hoy' }">
+    <div x-show="tabActiva === 'agendas'" x-data="{ subFiltro: 'hoy', busqueda: '', zonaFiltro: '', cobradorFiltro: '' }">
+        <?php $prefijoFiltro = 'agendas'; require __DIR__ . '/partials/filtro_busqueda.php'; ?>
+
         <div class="filter-chips">
             <button type="button" class="filter-chip" :class="{ 'is-activo': subFiltro === 'hoy' }" @click="subFiltro = 'hoy'">Hoy (<?= count($agendasHoyDashboard) ?>)</button>
             <button type="button" class="filter-chip" :class="{ 'is-activo': subFiltro === 'semana' }" @click="subFiltro = 'semana'">Esta semana (<?= count($agendasSemanaDashboard) ?>)</button>

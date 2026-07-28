@@ -3,10 +3,13 @@ declare(strict_types=1);
 
 /** Parcial incluido por dashboard.php en la solapa "Historial". */
 
-$busqueda     = trim((string) ($_GET['q'] ?? ''));
-$motivoFiltro = (string) ($_GET['motivo'] ?? '');
-$desde        = (string) ($_GET['desde'] ?? '');
-$hasta        = (string) ($_GET['hasta'] ?? '');
+$busqueda      = trim((string) ($_GET['q'] ?? ''));
+$motivoFiltro  = (string) ($_GET['motivo'] ?? '');
+$desde         = (string) ($_GET['desde'] ?? '');
+$hasta         = (string) ($_GET['hasta'] ?? '');
+$zonaFiltro    = (string) ($_GET['zona'] ?? '');
+$cobradorFiltro = (string) ($_GET['cobrador'] ?? '');
+$cobradores    = Tickets::cobradoresDistintos();
 
 $condiciones = ["t.estado = 'cerrado'"];
 $params      = [];
@@ -28,9 +31,17 @@ if ($hasta !== '') {
     $condiciones[] = 'DATE(t.fecha_cierre) <= ?';
     $params[]      = $hasta;
 }
+if ($zonaFiltro !== '') {
+    $condiciones[] = 'c.zona = ?';
+    $params[]      = $zonaFiltro;
+}
+if ($cobradorFiltro !== '') {
+    $condiciones[] = 'c.cobrador_nombre = ?';
+    $params[]      = $cobradorFiltro;
+}
 
 $stmt = Database::pdo()->prepare('
-    SELECT t.id AS ticket_id, t.fecha_cierre, t.motivo_cierre, t.monto_cierre, c.nombre_completo, c.dni
+    SELECT t.id AS ticket_id, t.fecha_cierre, t.motivo_cierre, t.monto_cierre, c.nombre_completo, c.dni, c.zona, c.cobrador_nombre
     FROM tickets t
     JOIN contactos_agenda c ON c.id = t.contacto_id
     WHERE ' . implode(' AND ', $condiciones) . '
@@ -69,6 +80,26 @@ $historial = $stmt->fetchAll();
             <label class="form-label" for="hasta">Hasta</label>
             <input class="form-input" type="date" name="hasta" id="hasta" value="<?= e($hasta) ?>">
         </div>
+
+        <div class="form-field">
+            <label class="form-label" for="zona">Zona</label>
+            <select class="form-select" name="zona" id="zona">
+                <option value="">Todas las zonas</option>
+                <option value="tucuman" <?= $zonaFiltro === 'tucuman' ? 'selected' : '' ?>>Tucumán</option>
+                <option value="santiago" <?= $zonaFiltro === 'santiago' ? 'selected' : '' ?>>Santiago</option>
+                <option value="catamarca" <?= $zonaFiltro === 'catamarca' ? 'selected' : '' ?>>Catamarca</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="cobrador">Cobrador</label>
+            <select class="form-select" name="cobrador" id="cobrador">
+                <option value="">Todos los cobradores</option>
+                <?php foreach ($cobradores as $c): ?>
+                    <option value="<?= e($c) ?>" <?= $cobradorFiltro === $c ? 'selected' : '' ?>><?= e($c) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
     </div>
 
     <button class="btn btn--primary btn--block" type="submit"><?= icon('buscar', 'icon--sm') ?> Buscar</button>
@@ -88,6 +119,8 @@ $historial = $stmt->fetchAll();
                     <?php if ($h['monto_cierre'] !== null): ?>
                         — $<?= e(number_format((float) $h['monto_cierre'], 0, ',', '.')) ?>
                     <?php endif; ?>
+                    <br>
+                    Zona: <?= e(ucfirst($h['zona'])) ?> · Cartera: <?= e($h['cobrador_nombre'] ?? '—') ?>
                 </span>
             </a>
         <?php endforeach; ?>

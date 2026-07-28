@@ -9,7 +9,21 @@ declare(strict_types=1);
 $hoyStr    = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
 $esVencida = $a['estado'] === 'incumplida' || ($a['estado'] === 'pendiente' && $a['fecha_agendada'] < $hoyStr);
 ?>
-<div class="card list-agenda-item<?= $esVencida ? ' list-agenda-item--vencida' : '' ?>" style="margin-bottom: var(--space-3)" x-data="{ reprogramando: false }">
+<div class="card list-agenda-item<?= $esVencida ? ' list-agenda-item--vencida' : '' ?>" style="margin-bottom: var(--space-3)"
+     x-data='<?= json_attr([
+         'reprogramando' => false,
+         't' => [
+             'nombre'   => $a['nombre_completo'],
+             'dni'      => $a['dni'],
+             'zona'     => $a['zona'],
+             'cobrador' => $a['cobrador_nombre'] ?? '',
+         ],
+     ]) ?>'
+     x-show="
+        (busqueda === '' || t.nombre.toLowerCase().includes(busqueda.toLowerCase()) || t.dni.includes(busqueda))
+        && (zonaFiltro === '' || t.zona === zonaFiltro)
+        && (cobradorFiltro === '' || t.cobrador === cobradorFiltro)
+     ">
     <div class="card-ticket__header">
         <strong><a href="index.php?p=ficha_ticket&id=<?= (int) $a['ticket_id'] ?>" style="color: inherit"><?= e($a['nombre_completo']) ?></a></strong>
         <span>$<?= e(number_format((float) $a['monto_esperado'], 0, ',', '.')) ?></span>
@@ -18,6 +32,7 @@ $esVencida = $a['estado'] === 'incumplida' || ($a['estado'] === 'pendiente' && $
         <?= e(agenda_tipo_label($a['tipo'])) ?> · <?= e((new DateTimeImmutable($a['fecha_agendada']))->format('d/m/Y')) ?>
         <?php if ($a['estado'] === 'incumplida'): ?> · <strong>Incumplida</strong><?php endif; ?>
     </p>
+    <p class="texto-secundario">Zona: <?= e(ucfirst($a['zona'])) ?> · Cartera: <?= e($a['cobrador_nombre'] ?? '—') ?></p>
 
     <form method="post" action="index.php?p=agendas_accion" style="display: inline-block; margin-right: var(--space-2)">
         <?= Csrf::campoOculto() ?>

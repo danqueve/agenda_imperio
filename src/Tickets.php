@@ -119,6 +119,7 @@ final class Tickets
                 'nombre_completo'  => $fila['nombre_completo'],
                 'telefono'         => $fila['telefono_principal'],
                 'cobrador_nombre'  => $fila['cobrador_nombre'],
+                'zona'             => $fila['zona'],
                 'dias_atraso'      => (int) $diasAtraso,
                 'deuda_total'      => $deudaTotal !== null ? (float) $deudaTotal : null,
                 'ultima_gestion'   => $fila['ultima_gestion'],
@@ -140,7 +141,9 @@ final class Tickets
     /**
      * Estadísticas para la solapa "Resumen" del dashboard. Reutiliza
      * listaParaVista() (misma sincronización cacheada) para el conteo de
-     * abiertos y el top 10 de rojos sin gestionar, y agrega 2 consultas
+     * abiertos y la lista de rojos sin gestionar (completa, sin cortar a
+     * 10 - el corte a "top 10 por defecto, todos si hay filtro activo" se
+     * hace en Alpine, ver views/dashboard.php), y agrega 2 consultas
      * chicas propias para lo que esa vista no calcula.
      */
     public static function estadisticasResumen(): array
@@ -175,12 +178,24 @@ final class Tickets
         usort($rojosSinGestionar, static fn (array $a, array $b): int => $b['dias_atraso'] <=> $a['dias_atraso']);
 
         return [
-            'sync'            => $lista['sync'],
-            'abiertos'        => $abiertos,
-            'abiertos_hoy'    => $abiertosHoy,
-            'cerrados_semana' => $cerradosPorMotivo,
-            'top10_rojos'     => array_slice($rojosSinGestionar, 0, 10),
+            'sync'                => $lista['sync'],
+            'abiertos'            => $abiertos,
+            'abiertos_hoy'        => $abiertosHoy,
+            'cerrados_semana'     => $cerradosPorMotivo,
+            'rojos_sin_gestionar' => $rojosSinGestionar,
         ];
+    }
+
+    /**
+     * Nombres de cobrador distintos y no vacíos, para poblar el <select>
+     * de filtro en lista_tickets/dashboard/historial. Conjunto pequeño y
+     * estable (sincronizado desde SAS) - no necesita paginar ni cachear.
+     */
+    public static function cobradoresDistintos(): array
+    {
+        return Database::pdo()
+            ->query("SELECT DISTINCT cobrador_nombre FROM contactos_agenda WHERE cobrador_nombre IS NOT NULL AND cobrador_nombre <> '' ORDER BY cobrador_nombre")
+            ->fetchAll(PDO::FETCH_COLUMN);
     }
 
     /** Ticket + datos del contacto, para la ficha del ticket. */
