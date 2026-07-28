@@ -68,6 +68,53 @@ function sas_normalizar_zona(?string $zonaSas): string
     return $normalizada !== '' ? $normalizada : 'Sin zona';
 }
 
+/**
+ * Réplica exacta de config/funciones.php del lado de SAS
+ * (dias_habiles/dias_atraso_habiles): cuenta días excluyendo
+ * únicamente domingos (sábado sí cuenta). Es la definición real de
+ * "días de atraso" que usa SAS en toda su app (reportes, agenda de
+ * cobradores, cálculo de mora, transición de una cuota a VENCIDA) -
+ * no un detalle de una sola pantalla. Portada acá en vez de hacer
+ * require del archivo real de SAS, para no acoplar esta API de solo
+ * lectura a la estructura interna de esa app.
+ */
+function sas_dias_habiles(DateTime $desde, DateTime $hasta): int
+{
+    if ($desde > $hasta) {
+        return 0;
+    }
+
+    $count   = 0;
+    $current = clone $desde;
+    while ($current <= $hasta) {
+        if ((int) $current->format('N') !== 7) { // 7 = domingo; sábado SÍ cuenta
+            $count++;
+        }
+        $current->modify('+1 day');
+    }
+
+    return $count;
+}
+
+function sas_dias_atraso_habiles(?string $fechaVencimiento): int
+{
+    if ($fechaVencimiento === null) {
+        return 0;
+    }
+
+    $hoy  = new DateTime('today');
+    $venc = new DateTime($fechaVencimiento);
+
+    if ($hoy <= $venc) {
+        return 0;
+    }
+
+    $desde = clone $venc;
+    $desde->modify('+1 day');
+
+    return sas_dias_habiles($desde, $hoy);
+}
+
 // ---- Autenticación por Bearer token ----
 $authHeader = sas_obtener_header_authorization();
 if (
@@ -108,7 +155,7 @@ function sas_accion_atrasados(PDO $pdo): void
             CONCAT(cli.nombres, \' \', cli.apellidos)            AS nombre,
             cli.telefono                                        AS telefono,
             CONCAT(usr.nombre, \' \', usr.apellido)              AS cobrador,
-            DATEDIFF(CURDATE(), MIN(cuo.fecha_vencimiento))     AS dias_atraso,
+            MIN(cuo.fecha_vencimiento)                          AS fecha_vencimiento_min,
             COUNT(cuo.id)                                        AS cuotas_vencidas,
             SUM(cuo.monto_cuota + COALESCE(cuo.monto_mora, 0) - COALESCE(cuo.saldo_pagado, 0)) AS deuda_total,
             cli.zona                                             AS zona_sas
@@ -123,20 +170,27 @@ function sas_accion_atrasados(PDO $pdo): void
           AND cli.dni IS NOT NULL AND cli.dni <> \'\'
           AND (cre.cobrador_id IS NULL OR cre.cobrador_id <> ' . SAS_COBRADOR_EXCLUIDO_ID . ')
         GROUP BY cli.id, cli.dni, cli.nombres, cli.apellidos, cli.telefono, usr.nombre, usr.apellido, cli.zona
-        HAVING dias_atraso > 7
-        ORDER BY dias_atraso DESC
     ';
 
     $stmt = $pdo->query($sql);
     $filas = $stmt->fetchAll();
 
-    foreach ($filas as &$fila) {
-        $fila['zona'] = sas_normalizar_zona($fila['zona_sas']);
-        unset($fila['zona_sas']);
-    }
-    unset($fila);
+    $resultado = [];
+    foreach ($filas as $fila) {
+        $diasAtraso = sas_dias_atraso_habiles($fila['fecha_vencimiento_min']);
+        if ($diasAtraso <= 7) {
+            continue;
+        }
 
-    sas_responder(true, $filas);
+        $fila['dias_atraso'] = $diasAtraso;
+        $fila['zona']        = sas_normalizar_zona($fila['zona_sas']);
+        unset($fila['zona_sas'], $fila['fecha_vencimiento_min']);
+        $resultado[] = $fila;
+    }
+
+    usort($resultado, static fn (array $a, array $b): int => $b['dias_atraso'] <=> $a['dias_atraso']);
+
+    sas_responder(true, $resultado);
 }
 
 /**
@@ -209,8 +263,8 @@ function sas_accion_deuda(PDO $pdo, string $dni): void
                      ELSE 0 END)                                                          AS deuda_total,
             SUM(CASE WHEN cuo.estado IN ('VENCIDA', 'PARCIAL') AND cuo.fecha_vencimiento < CURDATE()
                      THEN 1 ELSE 0 END)                                                    AS cuotas_vencidas,
-            DATEDIFF(CURDATE(), MIN(CASE WHEN cuo.estado IN ('VENCIDA', 'PARCIAL') AND cuo.fecha_vencimiento < CURDATE()
-                                          THEN cuo.fecha_vencimiento END))                  AS dias_atraso,
+            MIN(CASE WHEN cuo.estado IN ('VENCIDA', 'PARCIAL') AND cuo.fecha_vencimiento < CURDATE()
+                     THEN cuo.fecha_vencimiento END)                                        AS fecha_vencimiento_min,
             MIN(CASE WHEN cuo.estado IN ('PENDIENTE', 'VENCIDA', 'PARCIAL')
                      THEN cuo.fecha_vencimiento END)                                        AS proximo_vencimiento
         FROM ic_cuotas cuo
@@ -231,6 +285,9 @@ function sas_accion_deuda(PDO $pdo, string $dni): void
             'proximo_vencimiento' => null,
         ]);
     }
+
+    $fila['dias_atraso'] = sas_dias_atraso_habiles($fila['fecha_vencimiento_min']);
+    unset($fila['fecha_vencimiento_min']);
 
     sas_responder(true, $fila);
 }
