@@ -22,4 +22,10 @@
         </nav>
     </header>
 <?php endif; ?>
-<main class="app-main">
+<?php
+// Páginas de "explorar muchas tarjetas" aprovechan el ancho real de
+// pantalla en escritorio; el resto (ficha, formularios, login) se queda
+// en la columna angosta de siempre - ver app.css, .app-main--ancho.
+$anchoCompleto = in_array($p ?? '', ['lista_tickets', 'dashboard'], true);
+?>
+<main class="app-main<?= $anchoCompleto ? ' app-main--ancho' : '' ?>">

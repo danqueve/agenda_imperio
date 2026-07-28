@@ -29,33 +29,39 @@ $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciacio
             <p class="alerta alerta--error">No se pudo sincronizar con SAS en este momento. Los conteos usan los datos ya guardados.</p>
         <?php endif; ?>
 
-        <div class="stat-tile-grid">
+        <div class="kpi-hero">
+            <span class="kpi-hero__label">Tasa de contacto (7 días)</span>
+            <span class="kpi-hero__valor"><?= $tasaContactoDashboard ?>%</span>
+            <span class="kpi-hero__contexto">sobre las gestiones por llamada/visita de los últimos 7 días</span>
+        </div>
+
+        <div class="stat-tile-grid stat-tile-grid--secundaria">
             <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['abiertos'] ?></span><span class="stat-tile__label">Tickets abiertos</span></div>
             <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['abiertos_hoy'] ?></span><span class="stat-tile__label">Abiertos hoy</span></div>
             <div class="stat-tile"><span class="stat-tile__valor"><?= count($gestionesHoyDashboard) ?></span><span class="stat-tile__label">Gestiones hoy</span></div>
-            <div class="stat-tile"><span class="stat-tile__valor"><?= $tasaContactoDashboard ?>%</span><span class="stat-tile__label">Tasa de contacto (7 días)</span></div>
         </div>
 
         <h3>Cerrados esta semana</h3>
-        <div class="stat-tile-grid">
-            <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['cerrados_semana']['abono'] ?></span><span class="stat-tile__label">✅ Abonó</span></div>
-            <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['cerrados_semana']['retiro_producto'] ?></span><span class="stat-tile__label">📦 Se retiró producto</span></div>
-            <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['cerrados_semana']['refinanciacion'] ?></span><span class="stat-tile__label">🔄 Refinanció</span></div>
+        <div class="stat-tile-grid stat-tile-grid--secundaria">
+            <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['cerrados_semana']['abono'] ?></span><span class="stat-tile__label"><?= icon('check', 'icon--sm') ?> Abonó</span></div>
+            <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['cerrados_semana']['retiro_producto'] ?></span><span class="stat-tile__label"><?= icon('paquete', 'icon--sm') ?> Se retiró producto</span></div>
+            <div class="stat-tile"><span class="stat-tile__valor"><?= $resumen['cerrados_semana']['refinanciacion'] ?></span><span class="stat-tile__label"><?= icon('refinanciar', 'icon--sm') ?> Refinanció</span></div>
         </div>
 
         <h3>Top 10 rojos sin gestionar</h3>
         <?php if (empty($resumen['top10_rojos'])): ?>
             <p class="texto-secundario">No hay tickets rojos sin gestionar.</p>
         <?php else: ?>
-            <?php foreach ($resumen['top10_rojos'] as $t): ?>
-                <a class="card" style="display: block; margin-bottom: var(--space-3); text-decoration: none; color: inherit"
-                   href="index.php?p=ficha_ticket&id=<?= $t['ticket_id'] ?>">
-                    <div class="card-ticket__header">
-                        <strong><?= e($t['nombre_completo']) ?></strong>
-                        <span class="badge badge--rojo"><?= (int) $t['dias_atraso'] ?> días</span>
-                    </div>
-                </a>
-            <?php endforeach; ?>
+            <div class="tickets-grid">
+                <?php foreach ($resumen['top10_rojos'] as $t): ?>
+                    <a class="card" href="index.php?p=ficha_ticket&id=<?= $t['ticket_id'] ?>">
+                        <div class="card-ticket__header">
+                            <strong><?= e($t['nombre_completo']) ?></strong>
+                            <span class="badge badge--rojo"><?= icon('severidad') ?><?= (int) $t['dias_atraso'] ?> días</span>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -118,6 +124,7 @@ $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciacio
                             <strong><a href="index.php?p=ficha_ticket&id=<?= (int) $r['ticket_id'] ?>" style="color: inherit"><?= e($r['nombre_completo']) ?></a></strong>
                             <p class="texto-secundario"><?= e((new DateTimeImmutable($r['fecha_propuesta']))->format('d/m/Y')) ?></p>
 
+                            <div class="kanban__card-acciones">
                             <?php if ($estadoKey === 'borrador'): ?>
                                 <form method="post" action="index.php?p=refinanciaciones_accion">
                                     <?= Csrf::campoOculto() ?>
@@ -143,9 +150,10 @@ $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciacio
                                     <?= Csrf::campoOculto() ?>
                                     <input type="hidden" name="refinanciacion_id" value="<?= (int) $r['id'] ?>">
                                     <input type="hidden" name="accion" value="procesada_en_sas">
-                                    <button class="btn btn--primary btn--sm" type="submit">Procesada en SAS (cierra el ticket)</button>
+                                    <button class="btn btn--primary btn--sm" type="submit"><?= icon('refinanciar', 'icon--sm') ?> Procesada en SAS (cierra el ticket)</button>
                                 </form>
                             <?php endif; ?>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>

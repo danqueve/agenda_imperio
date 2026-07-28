@@ -127,10 +127,10 @@ $estaAbierto      = $ticket['estado'] === 'abierto';
 
     <?php if ($estaAbierto): ?>
         <div class="actionbar-fija">
-            <a class="btn btn--secondary" href="tel:<?= e($ticket['telefono_principal']) ?>">Llamar</a>
-            <button type="button" class="btn btn--secondary" @click="$store.whatsapp.abrir(<?= $ticketId ?>)">WhatsApp</button>
-            <a class="btn btn--secondary" href="index.php?p=registrar_gestion&ticket_id=<?= $ticketId ?>">Gestión</a>
-            <button type="button" class="btn btn--danger" @click="modalCerrar = true">Cerrar</button>
+            <a class="btn btn--secondary" href="tel:<?= e($ticket['telefono_principal']) ?>"><?= icon('telefono') ?> Llamar</a>
+            <button type="button" class="btn btn--secondary" @click="$store.whatsapp.abrir(<?= $ticketId ?>)"><?= icon('whatsapp') ?> WhatsApp</button>
+            <a class="btn btn--secondary" href="index.php?p=registrar_gestion&ticket_id=<?= $ticketId ?>"><?= icon('gestion') ?> Gestión</a>
+            <button type="button" class="btn btn--danger" @click="modalCerrar = true"><?= icon('cerrar') ?> Cerrar</button>
         </div>
 
         <?php require __DIR__ . '/cerrar_ticket.php'; ?>

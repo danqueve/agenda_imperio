@@ -34,18 +34,6 @@ final class Prioridad
         return 'verde';
     }
 
-    /** Etiqueta + emoji para mostrar en la UI. */
-    public static function etiqueta(string $prioridad): string
-    {
-        return match ($prioridad) {
-            'rojo'     => '🔴 Rojo',
-            'naranja'  => '🟠 Naranja',
-            'amarillo' => '🟡 Amarillo',
-            'verde'    => '🟢 Verde',
-            default    => $prioridad,
-        };
-    }
-
     private static function tieneGestionReciente(?string $fechaUltimaGestion, int $dias): bool
     {
         if ($fechaUltimaGestion === null) {

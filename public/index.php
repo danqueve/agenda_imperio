@@ -17,6 +17,7 @@ session_start([
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../src/Helpers.php';
+require_once __DIR__ . '/../src/Icons.php';
 require_once __DIR__ . '/../src/Csrf.php';
 require_once __DIR__ . '/../src/Auth.php';
 require_once __DIR__ . '/../src/SasApiClient.php';

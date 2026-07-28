@@ -17,9 +17,9 @@ declare(strict_types=1);
 
         <template x-if="!motivo">
             <div>
-                <button type="button" class="btn btn--primary btn--block" style="margin-bottom: var(--space-3)" @click="motivo = 'abono'">✅ Abonó</button>
-                <button type="button" class="btn btn--primary btn--block" style="margin-bottom: var(--space-3)" @click="motivo = 'retiro_producto'">📦 Se retiró producto</button>
-                <button type="button" class="btn btn--primary btn--block" style="margin-bottom: var(--space-3)" @click="motivo = 'refinanciacion'">🔄 Refinanció</button>
+                <button type="button" class="btn btn--primary btn--block" style="margin-bottom: var(--space-3)" @click="motivo = 'abono'"><?= icon('check') ?> Abonó</button>
+                <button type="button" class="btn btn--primary btn--block" style="margin-bottom: var(--space-3)" @click="motivo = 'retiro_producto'"><?= icon('paquete') ?> Se retiró producto</button>
+                <button type="button" class="btn btn--primary btn--block" style="margin-bottom: var(--space-3)" @click="motivo = 'refinanciacion'"><?= icon('refinanciar') ?> Refinanció</button>
                 <button type="button" class="btn btn--secondary btn--block" @click="modalCerrar = false">Cancelar</button>
             </div>
         </template>

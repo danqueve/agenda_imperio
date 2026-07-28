@@ -44,49 +44,52 @@ $historial = $stmt->fetchAll();
     <input type="hidden" name="p" value="dashboard">
     <input type="hidden" name="tab" value="historial">
 
-    <div class="form-field">
-        <label class="form-label" for="q">Buscar por nombre o DNI</label>
-        <input class="form-input" type="text" name="q" id="q" value="<?= e($busqueda) ?>">
+    <div class="form-fila">
+        <div class="form-field">
+            <label class="form-label" for="q">Buscar por nombre o DNI</label>
+            <input class="form-input" type="text" name="q" id="q" value="<?= e($busqueda) ?>">
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="motivo">Motivo</label>
+            <select class="form-select" name="motivo" id="motivo">
+                <option value="">Todos</option>
+                <option value="abono" <?= $motivoFiltro === 'abono' ? 'selected' : '' ?>>Abonó</option>
+                <option value="retiro_producto" <?= $motivoFiltro === 'retiro_producto' ? 'selected' : '' ?>>Se retiró producto</option>
+                <option value="refinanciacion" <?= $motivoFiltro === 'refinanciacion' ? 'selected' : '' ?>>Refinanció</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="desde">Desde</label>
+            <input class="form-input" type="date" name="desde" id="desde" value="<?= e($desde) ?>">
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="hasta">Hasta</label>
+            <input class="form-input" type="date" name="hasta" id="hasta" value="<?= e($hasta) ?>">
+        </div>
     </div>
 
-    <div class="form-field">
-        <label class="form-label" for="motivo">Motivo</label>
-        <select class="form-select" name="motivo" id="motivo">
-            <option value="">Todos</option>
-            <option value="abono" <?= $motivoFiltro === 'abono' ? 'selected' : '' ?>>Abonó</option>
-            <option value="retiro_producto" <?= $motivoFiltro === 'retiro_producto' ? 'selected' : '' ?>>Se retiró producto</option>
-            <option value="refinanciacion" <?= $motivoFiltro === 'refinanciacion' ? 'selected' : '' ?>>Refinanció</option>
-        </select>
-    </div>
-
-    <div class="form-field">
-        <label class="form-label" for="desde">Desde</label>
-        <input class="form-input" type="date" name="desde" id="desde" value="<?= e($desde) ?>">
-    </div>
-
-    <div class="form-field">
-        <label class="form-label" for="hasta">Hasta</label>
-        <input class="form-input" type="date" name="hasta" id="hasta" value="<?= e($hasta) ?>">
-    </div>
-
-    <button class="btn btn--primary btn--block" type="submit">Buscar</button>
+    <button class="btn btn--primary btn--block" type="submit"><?= icon('buscar', 'icon--sm') ?> Buscar</button>
 </form>
 
 <?php if (empty($historial)): ?>
     <p class="texto-secundario">No hay tickets cerrados que coincidan con la búsqueda.</p>
 <?php else: ?>
-    <?php foreach ($historial as $h): ?>
-        <a class="card" style="display: block; margin-bottom: var(--space-3); text-decoration: none; color: inherit"
-           href="index.php?p=ficha_ticket&id=<?= (int) $h['ticket_id'] ?>">
-            <strong><?= e($h['nombre_completo']) ?></strong> (DNI <?= e($h['dni']) ?>)
-            <br>
-            <span class="texto-secundario">
-                Cerrado el <?= e((new DateTimeImmutable($h['fecha_cierre']))->format('d/m/Y')) ?>
-                — <?= e(ucfirst(str_replace('_', ' ', $h['motivo_cierre']))) ?>
-                <?php if ($h['monto_cierre'] !== null): ?>
-                    — $<?= e(number_format((float) $h['monto_cierre'], 0, ',', '.')) ?>
-                <?php endif; ?>
-            </span>
-        </a>
-    <?php endforeach; ?>
+    <div class="tickets-grid">
+        <?php foreach ($historial as $h): ?>
+            <a class="card" href="index.php?p=ficha_ticket&id=<?= (int) $h['ticket_id'] ?>">
+                <strong><?= e($h['nombre_completo']) ?></strong> (DNI <?= e($h['dni']) ?>)
+                <br>
+                <span class="texto-secundario">
+                    Cerrado el <?= e((new DateTimeImmutable($h['fecha_cierre']))->format('d/m/Y')) ?>
+                    — <?= e(ucfirst(str_replace('_', ' ', $h['motivo_cierre']))) ?>
+                    <?php if ($h['monto_cierre'] !== null): ?>
+                        — $<?= e(number_format((float) $h['monto_cierre'], 0, ',', '.')) ?>
+                    <?php endif; ?>
+                </span>
+            </a>
+        <?php endforeach; ?>
+    </div>
 <?php endif; ?>

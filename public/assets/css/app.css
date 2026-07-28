@@ -8,6 +8,12 @@
   /* Base */
   --color-bg: #f4f6f8;
   --color-surface: #ffffff;
+  /* Superficie hundida/secundaria: diferencia columnas del kanban del
+     fondo de página y de las tarjetas blancas que contienen (jerarquía
+     página -> columna -> tarjeta). Depende del borde de 1px existente
+     para quedar definida, no solo del contraste de relleno (~1.05:1
+     contra --color-bg a propósito: es una superficie, no texto). */
+  --color-surface-2: #eef1f4;
   --color-text-primary: #1c2b36;
   --color-text-secondary: #5b6b76;
   --color-border: #d7dee3;
@@ -16,6 +22,8 @@
   --color-accent: #1e3a5f;
   --color-accent-hover: #16293f;
   --color-accent-text: #ffffff;
+  /* Texto secundario legible sobre --color-accent sólido (KPI héroe) - 7.52:1 verificado */
+  --color-accent-text-muted: #c7d2e0;
 
   --color-danger: #b3261e;
   --color-danger-text: #ffffff;
@@ -36,10 +44,12 @@
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --font-size-xs: 0.75rem; --font-size-sm: 0.875rem; --font-size-base: 1rem;
   --font-size-md: 1.125rem; --font-size-lg: 1.375rem; --font-size-xl: 1.75rem;
+  --font-size-2xl: 2.5rem; /* solo para el número del KPI héroe del dashboard */
   --line-height-base: 1.5;
 
-  /* Radios */
-  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-full: 999px;
+  /* Radios - subida moderada (no el 8/12/16 "de libro") para no perder
+     densidad en una lista con muchas .card-ticket por scroll */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 999px;
 
   /* Sombras mínimas: grises neutros, sin glow de color */
   --shadow-sm: 0 1px 2px rgba(16, 24, 32, .06);
@@ -75,6 +85,12 @@ a { color: var(--color-accent); }
 
 .full-height { height: 100vh; height: 100dvh; }
 
+/* ---- Íconos SVG inline (ver src/Icons.php) ---- */
+.icon { width: 20px; height: 20px; flex-shrink: 0; vertical-align: -3px; }
+.icon--sm { width: 16px; height: 16px; }
+.icon--lg { width: 24px; height: 24px; }
+.con-icono { display: inline-flex; align-items: center; gap: var(--space-2); }
+
 /* ---- Layout de app (header + main) ---- */
 .app-header {
   display: flex;
@@ -96,6 +112,22 @@ a { color: var(--color-accent); }
   margin: 0 auto;
 }
 
+/* Páginas orientadas a explorar/comparar muchos ítems (lista de tickets,
+   dashboard) piden más ancho en escritorio que una página de lectura
+   lineal (ficha de un ticket, formularios, login) - ver header.php,
+   que decide cuándo agregar este modificador según la página ($p). */
+.app-main--ancho { max-width: 640px; } /* igual que la base hasta que haya espacio real de sobra */
+
+/* ---- Grilla responsiva de tarjetas (lista de tickets, top 10 rojos,
+   resultados de historial) - un solo lugar para las 3 vistas que
+   necesitan "muchas tarjetas similares", en vez de que cada una
+   reinvente su propio grid. ---- */
+.tickets-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
 /* ---- Tarjetas ---- */
 .card {
   background: var(--color-surface);
@@ -106,6 +138,12 @@ a { color: var(--color-accent); }
 }
 
 .card--centrado { text-align: center; }
+
+/* Solo para usos reales de .card como enlace (historial, top 10 rojos) -
+   el selector exige <a> para no insinuar que las demás tarjetas (login,
+   deuda, alta de usuario) también son clickeables como unidad. */
+a.card { display: block; text-decoration: none; color: inherit; transition: box-shadow .15s ease; }
+a.card:hover { box-shadow: var(--shadow-md); }
 
 .texto-secundario { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 
@@ -215,7 +253,9 @@ a { color: var(--color-accent); }
 }
 
 .banner-recordatorio__toggle {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   width: 100%;
   min-height: var(--touch-min);
   padding: var(--space-2) var(--space-4);
@@ -229,6 +269,8 @@ a { color: var(--color-accent); }
   cursor: pointer;
 }
 
+.banner-recordatorio__toggle-texto { flex: 1; }
+
 .banner-recordatorio__lista {
   margin: 0;
   padding: 0 var(--space-4) var(--space-3);
@@ -241,6 +283,7 @@ a { color: var(--color-accent); }
 .badge {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-1);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
@@ -249,13 +292,19 @@ a { color: var(--color-accent); }
   white-space: nowrap;
 }
 
+.badge .icon { width: 14px; height: 14px; }
+
 .badge--rojo     { background: var(--color-rojo-bg);     color: var(--color-rojo-text);     border-color: var(--color-rojo-border); }
 .badge--naranja  { background: var(--color-naranja-bg);  color: var(--color-naranja-text);  border-color: var(--color-naranja-border); }
 .badge--amarillo { background: var(--color-amarillo-bg); color: var(--color-amarillo-text); border-color: var(--color-amarillo-border); }
 .badge--verde    { background: var(--color-verde-bg);    color: var(--color-verde-text);    border-color: var(--color-verde-border); }
 
-/* ---- Tarjeta de ticket (lista de tickets) ---- */
-.card-ticket { margin-bottom: var(--space-4); }
+/* ---- Tarjeta de ticket (lista de tickets) ----
+   Sin margin-bottom propio: la espera .tickets-grid, que la envuelve. */
+.card-ticket {
+  display: flex;
+  flex-direction: column;
+}
 
 .card-ticket__header {
   display: flex;
@@ -274,6 +323,7 @@ a { color: var(--color-accent); }
   margin-bottom: var(--space-4);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  flex: 1; /* empuja .card-ticket__acciones al fondo cuando las tarjetas de una misma fila del grid tienen distinta altura de contenido */
 }
 
 .card-ticket__acciones { display: flex; gap: var(--space-2); flex-wrap: wrap; }
@@ -300,9 +350,12 @@ a { color: var(--color-accent); }
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
 }
 
+.filter-chip:hover { border-color: var(--color-accent); color: var(--color-text-primary); }
 .filter-chip.is-activo { background: var(--color-accent); color: var(--color-accent-text); border-color: var(--color-accent); }
+.filter-chip.is-activo:hover { color: var(--color-accent-text); }
 
 /* ---- Barra de acción fija (ficha del ticket) ---- */
 .app-main--con-actionbar { padding-bottom: calc(var(--touch-min) + var(--space-6)); }
@@ -336,6 +389,7 @@ a { color: var(--color-accent); }
 }
 
 .modal-panel {
+  position: relative;
   background: var(--color-surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: var(--space-5);
@@ -345,6 +399,20 @@ a { color: var(--color-accent); }
   max-height: 85dvh;
   overflow-y: auto;
   z-index: var(--z-modal);
+}
+
+/* "Grabber" decorativo de hoja inferior móvil - puramente visual, sin
+   gesto de swipe real. Se oculta en el modo modal centrado de escritorio. */
+.modal-panel::before {
+  content: '';
+  position: absolute;
+  top: var(--space-2);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
 }
 
 .modal-panel__titulo { margin-bottom: var(--space-4); }
@@ -383,15 +451,19 @@ a { color: var(--color-accent); }
   min-height: var(--touch-min);
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   font-family: inherit;
   font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-text-secondary);
   cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
 }
 
+.tabs__tab:hover { background: var(--color-surface-2); }
 .tabs__tab.is-activo { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.tabs__tab.is-activo:hover { background: transparent; }
 
 /* ---- Timeline de gestiones ---- */
 .timeline { list-style: none; margin: 0; padding: 0; }
@@ -447,6 +519,25 @@ a { color: var(--color-accent); }
 .form-toggle__input:checked + .form-toggle__switch { background: var(--color-accent); }
 .form-toggle__input:checked + .form-toggle__switch::after { transform: translateX(18px); }
 
+/* ---- KPI héroe (solapa Resumen del dashboard) ----
+   Un solo número protagonista (tasa de contacto) en vez de que los 7
+   KPIs compitan con el mismo peso visual. A propósito SIN cursor:pointer
+   ni :hover: no es un botón, es un dato destacado. */
+.kpi-hero {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.kpi-hero__label { font-size: var(--font-size-sm); font-weight: 600; }
+.kpi-hero__valor { font-size: var(--font-size-2xl); font-weight: 800; line-height: 1; }
+.kpi-hero__contexto { font-size: var(--font-size-sm); color: var(--color-accent-text-muted); }
+
 /* ---- KPI tiles (solapa Resumen del dashboard) ---- */
 .stat-tile-grid {
   display: grid;
@@ -454,6 +545,10 @@ a { color: var(--color-accent); }
   gap: var(--space-3);
   margin-bottom: var(--space-5);
 }
+
+/* 3 tiles secundarios por fila (en vez de 4) ahora que la 4ta métrica
+   pasó a ser el KPI héroe de arriba */
+.stat-tile-grid--secundaria { grid-template-columns: repeat(2, 1fr); }
 
 .stat-tile {
   background: var(--color-surface);
@@ -464,7 +559,15 @@ a { color: var(--color-accent); }
 }
 
 .stat-tile__valor { display: block; font-size: var(--font-size-xl); font-weight: 700; color: var(--color-accent); }
-.stat-tile__label { display: block; font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-top: var(--space-1); }
+.stat-tile__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
 
 /* ---- Fila de agenda (solapa Agendas del dashboard) ---- */
 .list-agenda-item--vencida { border-color: var(--color-rojo-border); }
@@ -474,7 +577,13 @@ a { color: var(--color-accent); }
    Desde tablet: las 4 columnas lado a lado. */
 .kanban { display: block; }
 
-.kanban__column { display: none; }
+.kanban__column {
+  display: none;
+  /* jerarquía página (--color-bg) -> columna (--color-surface-2) -> tarjeta (--color-surface) */
+  background: var(--color-surface-2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+}
 .kanban__column.is-activa { display: block; }
 
 .kanban__column-titulo { margin-bottom: var(--space-3); }
@@ -482,19 +591,46 @@ a { color: var(--color-accent); }
 .kanban__card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm); /* un nivel "más anidado" que la columna que lo contiene */
   padding: var(--space-3);
   margin-bottom: var(--space-3);
+  transition: box-shadow .15s ease;
 }
 
-.kanban__card form { margin-top: var(--space-2); display: inline-block; margin-right: var(--space-2); }
+.kanban__card:hover { box-shadow: var(--shadow-sm); }
+
+.kanban__card-acciones { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.kanban__card-acciones form { margin: 0; }
 
 /* ---- Escala hacia tablet/desktop (mobile-first: base = móvil) ---- */
 @media (min-width: 768px) {
   .app-main { padding: var(--space-6); }
   .modal-backdrop { align-items: center; }
   .modal-panel { border-radius: var(--radius-lg); }
+  .modal-panel::before { display: none; } /* el grabber es solo para el modo hoja-inferior móvil */
   .stat-tile-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-tile-grid--secundaria { grid-template-columns: repeat(3, 1fr); }
   .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
   .kanban__column { display: block; }
+  .tickets-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---- Escritorio ancho: páginas de "explorar muchas tarjetas" (lista de
+   tickets, dashboard) usan el espacio real de la pantalla en vez de
+   quedar en una columna angosta centrada con espacio vacío a los lados.
+   Páginas de lectura lineal (ficha de ticket, formularios, login) NO
+   llevan --ancho a propósito: leer texto en una línea de 1280px es
+   incómodo, mejor mantenerlas en los 640px de siempre. ---- */
+@media (min-width: 1024px) {
+  .app-main--ancho { max-width: 1280px; }
+  .tickets-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* Fila de filtros de historial_tickets.php: en mobile los campos
+     siguen apilados (sin cambios); desde acá pasan a una sola fila. */
+  .form-fila {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: var(--space-3);
+  }
+  .form-fila .form-field { margin-bottom: 0; }
 }

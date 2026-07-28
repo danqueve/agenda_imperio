@@ -23,7 +23,10 @@ if ($expandirBannerAhora) {
 ?>
 <div class="banner-recordatorio" x-data="{ expandido: <?= $expandirBannerAhora ? 'true' : 'false' ?> }">
     <button type="button" class="banner-recordatorio__toggle" @click="expandido = !expandido">
-        📅 AGENDAS DE HOY (<?= count($agendasDeHoy) ?>)
+        <?= icon('calendario') ?>
+        <span class="banner-recordatorio__toggle-texto">AGENDAS DE HOY (<?= count($agendasDeHoy) ?>)</span>
+        <span x-show="!expandido"><?= icon('chevron-abajo', 'icon--sm') ?></span>
+        <span x-show="expandido"><?= icon('chevron-arriba', 'icon--sm') ?></span>
     </button>
     <ul class="banner-recordatorio__lista" x-show="expandido">
         <?php foreach ($agendasDeHoy as $agenda): ?>
