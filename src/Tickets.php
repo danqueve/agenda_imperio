@@ -129,11 +129,7 @@ final class Tickets
             ];
         }
 
-        $ordenPrioridad = ['rojo' => 0, 'naranja' => 1, 'amarillo' => 2, 'verde' => 3];
-        usort($resultado, static function (array $a, array $b) use ($ordenPrioridad): int {
-            return $ordenPrioridad[$a['prioridad']] <=> $ordenPrioridad[$b['prioridad']]
-                ?: $b['dias_atraso'] <=> $a['dias_atraso'];
-        });
+        usort($resultado, static fn (array $a, array $b): int => $a['dias_atraso'] <=> $b['dias_atraso']);
 
         return ['sync' => $sync, 'tickets' => $resultado];
     }
