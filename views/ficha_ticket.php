@@ -13,7 +13,7 @@ $estaAbierto      = $ticket['estado'] === 'abierto';
 <div x-data="{ tab: 'deuda', modalCerrar: false }" class="<?= $estaAbierto ? 'app-main--con-actionbar' : '' ?>">
     <h1><?= e($ticket['nombre_completo']) ?></h1>
     <p class="texto-secundario">
-        DNI <?= e($ticket['dni']) ?> · Cartera de: <?= e($ticket['cobrador_nombre'] ?? '—') ?> · Zona: <?= e(ucfirst($ticket['zona'])) ?>
+        DNI <?= e($ticket['dni']) ?> · Cartera de: <?= e($ticket['cobrador_nombre'] ?? '—') ?> · Zona: <?= e($ticket['zona']) ?>
     </p>
 
     <?php if (!$estaAbierto): ?>

@@ -56,25 +56,16 @@ function sas_obtener_header_authorization(): ?string
 }
 
 /**
- * ic_clientes.zona es texto libre ("Zona 1", "Famailla", "Tafi del
- * Valle", "Sgo", "Cat", "Duros", "Capital", vacío, etc. - confirmado
- * en vivo), no coincide con el ENUM propio de la Agenda
- * ('tucuman','santiago','catamarca'). El resto de las sub-zonas/rutas
- * observadas son todas de Tucumán, así que son el default.
+ * ic_clientes.zona es texto libre ("Zona 1", "Bella Vista", "Famailla",
+ * "Tafi del Valle", "Sgo", "Cat", "Duros", "Capital", vacío, etc. -
+ * confirmado en vivo). Se devuelve tal cual viene (recortada), sin
+ * resumir a buckets - la Agenda ya no fuerza un ENUM propio de zona.
  */
-function sas_mapear_zona(?string $zonaSas): string
+function sas_normalizar_zona(?string $zonaSas): string
 {
-    $normalizada = mb_strtolower(trim((string) $zonaSas));
+    $normalizada = trim((string) $zonaSas);
 
-    if (str_contains($normalizada, 'sgo') || str_contains($normalizada, 'santiago')) {
-        return 'santiago';
-    }
-
-    if (str_contains($normalizada, 'cat')) {
-        return 'catamarca';
-    }
-
-    return 'tucuman';
+    return $normalizada !== '' ? $normalizada : 'Sin zona';
 }
 
 // ---- Autenticación por Bearer token ----
@@ -140,7 +131,7 @@ function sas_accion_atrasados(PDO $pdo): void
     $filas = $stmt->fetchAll();
 
     foreach ($filas as &$fila) {
-        $fila['zona'] = sas_mapear_zona($fila['zona_sas']);
+        $fila['zona'] = sas_normalizar_zona($fila['zona_sas']);
         unset($fila['zona_sas']);
     }
     unset($fila);
@@ -176,7 +167,7 @@ function sas_accion_cliente(PDO $pdo, string $dni): void
         sas_responder(false, null, 'Cliente no encontrado', 404);
     }
 
-    $cliente['zona'] = sas_mapear_zona($cliente['zona']);
+    $cliente['zona'] = sas_normalizar_zona($cliente['zona']);
 
     $stmtCreditos = $pdo->prepare("
         SELECT

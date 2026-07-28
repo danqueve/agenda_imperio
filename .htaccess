@@ -13,13 +13,13 @@
 # una, no aca en uno solo con reglas de directorio.
 
 <IfModule mod_authz_core.c>
-    <Files "cron_apertura_tickets.php">
+    <FilesMatch "^(cron_apertura_tickets|migrar_zona_real)\.php$">
         Require all denied
-    </Files>
+    </FilesMatch>
 </IfModule>
 <IfModule !mod_authz_core.c>
-    <Files "cron_apertura_tickets.php">
+    <FilesMatch "^(cron_apertura_tickets|migrar_zona_real)\.php$">
         Order deny,allow
         Deny from all
-    </Files>
+    </FilesMatch>
 </IfModule>

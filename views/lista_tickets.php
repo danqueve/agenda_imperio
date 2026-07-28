@@ -4,6 +4,7 @@ declare(strict_types=1);
 $vistaLista = Tickets::listaParaVista();
 $tickets    = $vistaLista['tickets'];
 $cobradores = Tickets::cobradoresDistintos();
+$zonas      = Tickets::zonasDistintas();
 ?>
 <div x-data="{ filtro: 'todos', busqueda: '', zonaFiltro: '', cobradorFiltro: '' }">
     <h1>Tickets en gestión</h1>
@@ -59,7 +60,7 @@ $cobradores = Tickets::cobradoresDistintos();
                 <div class="card-ticket__meta">
                     <span>Deuda: <?= $t['deuda_total'] !== null ? '$' . e(number_format($t['deuda_total'], 0, ',', '.')) : 'no disponible ahora' ?></span>
                     <span>Cartera de: <?= e($t['cobrador_nombre'] ?? '—') ?></span>
-                    <span>Zona: <?= e(ucfirst($t['zona'])) ?></span>
+                    <span>Zona: <?= e($t['zona']) ?></span>
                     <span>Última gestión: <?= $t['ultima_gestion'] ? e((new DateTimeImmutable($t['ultima_gestion']))->format('d/m/Y H:i')) : 'Nunca' ?></span>
                     <?php if ($t['tiene_agenda_hoy']): ?>
                         <span class="con-icono"><?= icon('calendario', 'icon--sm') ?> Tiene agenda de cobro para hoy</span>

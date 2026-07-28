@@ -10,6 +10,7 @@ $hasta         = (string) ($_GET['hasta'] ?? '');
 $zonaFiltro    = (string) ($_GET['zona'] ?? '');
 $cobradorFiltro = (string) ($_GET['cobrador'] ?? '');
 $cobradores    = Tickets::cobradoresDistintos();
+$zonas         = Tickets::zonasDistintas();
 
 $condiciones = ["t.estado = 'cerrado'"];
 $params      = [];
@@ -85,9 +86,9 @@ $historial = $stmt->fetchAll();
             <label class="form-label" for="zona">Zona</label>
             <select class="form-select" name="zona" id="zona">
                 <option value="">Todas las zonas</option>
-                <option value="tucuman" <?= $zonaFiltro === 'tucuman' ? 'selected' : '' ?>>Tucumán</option>
-                <option value="santiago" <?= $zonaFiltro === 'santiago' ? 'selected' : '' ?>>Santiago</option>
-                <option value="catamarca" <?= $zonaFiltro === 'catamarca' ? 'selected' : '' ?>>Catamarca</option>
+                <?php foreach ($zonas as $z): ?>
+                    <option value="<?= e($z) ?>" <?= $zonaFiltro === $z ? 'selected' : '' ?>><?= e($z) ?></option>
+                <?php endforeach; ?>
             </select>
         </div>
 
@@ -120,7 +121,7 @@ $historial = $stmt->fetchAll();
                         — $<?= e(number_format((float) $h['monto_cierre'], 0, ',', '.')) ?>
                     <?php endif; ?>
                     <br>
-                    Zona: <?= e(ucfirst($h['zona'])) ?> · Cartera: <?= e($h['cobrador_nombre'] ?? '—') ?>
+                    Zona: <?= e($h['zona']) ?> · Cartera: <?= e($h['cobrador_nombre'] ?? '—') ?>
                 </span>
             </a>
         <?php endforeach; ?>

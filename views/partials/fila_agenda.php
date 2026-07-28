@@ -32,7 +32,7 @@ $esVencida = $a['estado'] === 'incumplida' || ($a['estado'] === 'pendiente' && $
         <?= e(agenda_tipo_label($a['tipo'])) ?> · <?= e((new DateTimeImmutable($a['fecha_agendada']))->format('d/m/Y')) ?>
         <?php if ($a['estado'] === 'incumplida'): ?> · <strong>Incumplida</strong><?php endif; ?>
     </p>
-    <p class="texto-secundario">Zona: <?= e(ucfirst($a['zona'])) ?> · Cartera: <?= e($a['cobrador_nombre'] ?? '—') ?></p>
+    <p class="texto-secundario">Zona: <?= e($a['zona']) ?> · Cartera: <?= e($a['cobrador_nombre'] ?? '—') ?></p>
 
     <form method="post" action="index.php?p=agendas_accion" style="display: inline-block; margin-right: var(--space-2)">
         <?= Csrf::campoOculto() ?>

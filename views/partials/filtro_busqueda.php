@@ -14,6 +14,7 @@ declare(strict_types=1);
  *                    partial más de una vez (Resumen y Agendas conviven
  *                    en el DOM, Alpine solo las oculta con x-show).
  *   $cobradores    : array de nombres (Tickets::cobradoresDistintos()).
+ *   $zonas         : array de zonas reales (Tickets::zonasDistintas()).
  */
 ?>
 <div class="form-fila" style="margin-bottom: var(--space-4)">
@@ -25,9 +26,9 @@ declare(strict_types=1);
         <label class="form-label" for="zona_<?= e($prefijoFiltro) ?>">Zona</label>
         <select class="form-select" id="zona_<?= e($prefijoFiltro) ?>" x-model="zonaFiltro">
             <option value="">Todas las zonas</option>
-            <option value="tucuman">Tucumán</option>
-            <option value="santiago">Santiago</option>
-            <option value="catamarca">Catamarca</option>
+            <?php foreach ($zonas as $z): ?>
+                <option value="<?= e($z) ?>"><?= e($z) ?></option>
+            <?php endforeach; ?>
         </select>
     </div>
     <div class="form-field">

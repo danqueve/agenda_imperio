@@ -9,6 +9,7 @@ $agendasSemanaDashboard     = Agendas::estaSemana();
 $agendasVencidasDashboard   = Agendas::vencidas();
 $refinanciacionesPorEstado  = Refinanciaciones::porEstado();
 $cobradores                 = Tickets::cobradoresDistintos();
+$zonas                      = Tickets::zonasDistintas();
 
 $tabInicial = in_array($_GET['tab'] ?? '', ['resumen', 'agendas', 'refinanciaciones', 'historial'], true)
     ? $_GET['tab']

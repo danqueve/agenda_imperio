@@ -198,6 +198,18 @@ final class Tickets
             ->fetchAll(PDO::FETCH_COLUMN);
     }
 
+    /**
+     * Zonas reales distintas (tal cual las tiene SAS: "Bella Vista",
+     * "Zona 1", etc.), para poblar el <select> de filtro en
+     * lista_tickets/dashboard/historial.
+     */
+    public static function zonasDistintas(): array
+    {
+        return Database::pdo()
+            ->query('SELECT DISTINCT zona FROM contactos_agenda ORDER BY zona')
+            ->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     /** Ticket + datos del contacto, para la ficha del ticket. */
     public static function porId(int $id): ?array
     {
@@ -262,12 +274,13 @@ final class Tickets
         if ($existente) {
             $pdo->prepare('
                 UPDATE contactos_agenda
-                SET nombre_completo = ?, telefono_principal = ?, cobrador_nombre = ?
+                SET nombre_completo = ?, telefono_principal = ?, cobrador_nombre = ?, zona = ?
                 WHERE id = ?
             ')->execute([
                 $atrasado['nombre'],
                 $atrasado['telefono'] ?? null,
                 $atrasado['cobrador'] ?? null,
+                $atrasado['zona'] ?? 'Sin zona',
                 $existente,
             ]);
 
@@ -282,7 +295,7 @@ final class Tickets
             $atrasado['nombre'],
             $atrasado['telefono'] ?? null,
             $atrasado['cobrador'] ?? null,
-            $atrasado['zona'] ?? 'tucuman',
+            $atrasado['zona'] ?? 'Sin zona',
         ]);
 
         return (int) $pdo->lastInsertId();

@@ -39,7 +39,7 @@ CREATE TABLE contactos_agenda (
   telefono_alt          VARCHAR(20)  NULL,
   direccion_referencia  VARCHAR(200) NULL,
   cobrador_nombre       VARCHAR(80)  NULL,
-  zona                  ENUM('tucuman','santiago','catamarca') NOT NULL,
+  zona                  VARCHAR(80)  NOT NULL DEFAULT '',
   activo                TINYINT(1)   NOT NULL DEFAULT 1,
   fecha_alta            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
