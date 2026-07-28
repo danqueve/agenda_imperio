@@ -12,3 +12,10 @@ desktop.ini
 
 # Logs
 *.log
+
+# Configs reales con credenciales (usar los *.prod.php.example como plantilla,
+# o el config/database.php / config/sas_api.php local de WAMP - nunca commitear
+# el que tenga credenciales reales de ningún entorno)
+config/database.php
+config/sas_api.php
+sas_side/config_readonly.php

@@ -88,7 +88,7 @@ real de que algo se rompió en el camino al deploy.
 
 - [ ] Agendar un cobro para una fecha **pasada** (o esperar a que una
       agenda de hoy quede sin resolver) y correr `cron_diario.php` (por
-      cPanel o manualmente) → la agenda debe pasar a estado
+      cron job o manualmente por SSH) → la agenda debe pasar a estado
       "Incumplida", y aparecer en la sub-pestaña "Vencidas" del
       dashboard.
 - [ ] Reprogramar una agenda vencida a una fecha futura → debe
